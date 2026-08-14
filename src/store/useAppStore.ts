@@ -23,6 +23,7 @@ import {
   releaseWakeLock,
   setupMediaSession,
   updateMediaSession,
+  updateMediaSessionPosition,
 } from '../audio/engine'
 
 const SPEED_KEY = 'abp.speed'
@@ -33,6 +34,7 @@ export const SPEED_PRESETS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
 let wired = false
 let pendingResume: number | null = null
 let lastTimeUpdate = 0
+let lastMediaSessionUpdate = 0
 let bookmarkTimer: number | null = null
 
 function setMediaPlayback(state: 'playing' | 'paused') {
@@ -227,6 +229,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         if (now - lastTimeUpdate < 200) return
         lastTimeUpdate = now
         useAppStore.setState({ currentTime: a.currentTime })
+        const st = useAppStore.getState()
+        if (st.status === 'playing' && now - lastMediaSessionUpdate >= 1000) {
+          lastMediaSessionUpdate = now
+          updateMediaSessionPosition(a.currentTime, a.duration, st.speed)
+        }
       })
       a.addEventListener('loadedmetadata', () => {
         const duration = Number.isFinite(a.duration) ? a.duration : 0
@@ -250,7 +257,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             ? { position: resume, title: st.file.name }
             : null,
         })
-        updateMediaSession(st.file?.name ?? '', st.folderPath ?? '', resume ?? 0, duration)
+        updateMediaSession(st.file?.name ?? '', st.folderPath ?? '', resume ?? 0, duration, st.speed)
       })
       a.addEventListener('ended', () => {
         const st = useAppStore.getState()
@@ -584,7 +591,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         meta,
         error: null,
       })
-      updateMediaSession(node.name, folderPath ?? '', 0, 0)
+      updateMediaSession(node.name, folderPath ?? '', 0, 0, speed)
       setMediaPlayback('playing')
       await audio.play()
       acquireWakeLock()
@@ -603,6 +610,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       releaseWakeLock()
       setMediaPlayback('paused')
       set({ status: 'paused' })
+      updateMediaSessionPosition(a.currentTime, a.duration, st.speed)
     } else if (st.status === 'paused') {
       a.playbackRate = st.speed
       a.play()
@@ -633,13 +641,15 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   seek: (t) => {
     const a = getAudio()
-    const { duration } = get()
+    const st = get()
+    const { duration } = st
     const max = Number.isFinite(duration) ? duration : Number.MAX_SAFE_INTEGER
     const clamped = Math.max(0, Math.min(t, max))
     if (Number.isFinite(a.duration) && a.duration > 0) {
       a.currentTime = clamped
     }
     set({ currentTime: clamped })
+    updateMediaSessionPosition(clamped, duration, st.speed)
   },
 
   next: () => {
@@ -673,6 +683,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     a.playbackRate = s
     localStorage.setItem(SPEED_KEY, String(s))
     set({ speed: s })
+    updateMediaSessionPosition(a.currentTime, a.duration, s)
   },
 
   setContinuous: (b) => {

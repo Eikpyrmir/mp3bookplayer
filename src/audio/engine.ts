@@ -55,18 +55,36 @@ export function setupMediaSession(handlers: MediaSessionHandlers): void {
   }
 }
 
-export function updateMediaSession(title: string, artist: string, position: number, duration: number): void {
+export function updateMediaSession(
+  title: string,
+  artist: string,
+  position: number,
+  duration: number,
+  playbackRate = 1,
+): void {
   if (!('mediaSession' in navigator)) return
   try {
     navigator.mediaSession.metadata = new MediaMetadata({ title, artist })
   } catch {
     // ignore
   }
+  updateMediaSessionPosition(position, duration, playbackRate)
+}
+
+export function updateMediaSessionPosition(
+  position: number,
+  duration: number,
+  playbackRate = 1,
+): void {
+  if (!('mediaSession' in navigator)) return
+  const dur = Number.isFinite(duration) && duration > 0 ? duration : 0
+  if (dur <= 0) return
+  const pos = Number.isFinite(position) ? Math.max(0, Math.min(position, dur)) : 0
   try {
     navigator.mediaSession.setPositionState({
-      duration: Number.isFinite(duration) ? duration : 0,
-      playbackRate: 1,
-      position: Number.isFinite(position) ? position : 0,
+      duration: dur,
+      playbackRate,
+      position: pos >= dur ? dur - 0.01 : pos,
     })
   } catch {
     // ignore
