@@ -102,6 +102,13 @@ function ResumeBanner() {
   const resumeBanner = useAppStore((s) => s.resumeBanner)
   const dismiss = useAppStore((s) => s.dismissResumeBanner)
   const playFromBeginning = useAppStore((s) => s.playFromBeginning)
+
+  useEffect(() => {
+    if (!resumeBanner) return
+    const timer = window.setTimeout(dismiss, 5000)
+    return () => window.clearTimeout(timer)
+  }, [resumeBanner, dismiss])
+
   if (!resumeBanner) return null
   return (
     <div className="absolute inset-x-3 top-3 z-10 flex items-center gap-2 rounded-xl border border-sky-800 bg-slate-900/95 px-3 py-2 text-xs shadow-lg">
