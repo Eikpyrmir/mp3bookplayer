@@ -11,7 +11,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'apple-touch-icon.png'],
       manifest: {
-        name: 'オーディオブックプレイヤー',
+        name: 'mp3bookplayer',
         short_name: 'mp3bookplayer',
         description: 'ローカルのMP3などでオーディオブックを再生するアプリ',
         theme_color: '#1e293b',
