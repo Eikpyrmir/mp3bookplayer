@@ -37,10 +37,8 @@ function FolderRow({ node, depth }: { node: FolderNode; depth: number }) {
           className={`h-4 w-4 flex-none text-slate-500 transition-transform ${expanded ? 'rotate-90' : ''}`}
         />
         <IconFolder open={expanded} className="h-5 w-5 flex-none text-sky-400" />
-        {expanded && status === 'idle' ? (
-          <Marquee className="min-w-0 flex-1" loop={false}>
-            {node.name}
-          </Marquee>
+        {expanded && status !== 'playing' ? (
+          <Marquee className="min-w-0 flex-1">{node.name}</Marquee>
         ) : (
           <span className="min-w-0 flex-1 truncate">{node.name}</span>
         )}
