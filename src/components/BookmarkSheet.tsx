@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { formatTime } from '../utils/format'
 import { Marquee } from './Marquee'
@@ -10,6 +11,7 @@ export function BookmarkSheet() {
   const playBookmark = useAppStore((s) => s.playBookmark)
   const removeBookmark = useAppStore((s) => s.removeBookmark)
   const removeAllBookmarks = useAppStore((s) => s.removeAllBookmarks)
+  const [confirmClear, setConfirmClear] = useState(false)
 
   if (!open) return null
 
@@ -78,13 +80,40 @@ export function BookmarkSheet() {
                   </li>
                 ))}
               </ul>
-              <button
-                type="button"
-                onClick={removeAllBookmarks}
-                className="mt-2 w-full rounded-xl border border-red-900/60 bg-red-950/40 px-4 py-2 text-sm text-red-300 hover:bg-red-900/30"
-              >
-                すべて削除
-              </button>
+              {confirmClear ? (
+                <div className="mt-2 rounded-xl border border-red-900/60 bg-red-950/40 px-4 py-3">
+                  <p className="text-sm font-medium text-red-200">
+                    すべてのしおり({bookmarks.length}件)を削除しますか?
+                  </p>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setConfirmClear(false)
+                        removeAllBookmarks()
+                      }}
+                      className="flex-1 rounded-xl bg-red-700 px-4 py-2 text-sm font-medium text-white active:bg-red-800"
+                    >
+                      削除する
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmClear(false)}
+                      className="flex-1 rounded-xl border border-slate-600 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800"
+                    >
+                      キャンセル
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmClear(true)}
+                  className="mt-2 w-full rounded-xl border border-red-900/60 bg-red-950/40 px-4 py-2 text-sm text-red-300 hover:bg-red-900/30"
+                >
+                  すべて削除
+                </button>
+              )}
             </>
           )}
         </div>
