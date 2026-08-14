@@ -102,3 +102,11 @@ export function IconRefresh({ className = 'w-4 h-4' }: IconProps) {
     </svg>
   )
 }
+
+export function IconBookmark({ className = 'w-5 h-5' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M6 4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17l-6-4.5L6 21V4z" />
+    </svg>
+  )
+}

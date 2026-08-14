@@ -28,6 +28,7 @@ import {
 
 const SPEED_KEY = 'abp.speed'
 const CONTINUOUS_KEY = 'abp.continuous'
+const BT_DISABLE_KEY = 'abp.btDisablePrevNext'
 
 export const SPEED_PRESETS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
 
@@ -41,6 +42,20 @@ function setMediaPlayback(state: 'playing' | 'paused') {
   if ('mediaSession' in navigator) {
     navigator.mediaSession.playbackState = state
   }
+}
+
+function applyMediaSession() {
+  const st = useAppStore.getState()
+  setupMediaSession(
+    {
+      onPlay: () => useAppStore.getState().togglePlay(),
+      onPause: () => useAppStore.getState().togglePlay(),
+      onNext: () => useAppStore.getState().next(),
+      onPrev: () => useAppStore.getState().prev(),
+      onSeekTo: (position) => useAppStore.getState().seek(position),
+    },
+    st.btDisablePrevNext,
+  )
 }
 
 function saveNow() {
@@ -167,10 +182,12 @@ interface AppState {
   duration: number
   speed: number
   continuous: boolean
+  btDisablePrevNext: boolean
   resumeBanner: { position: number; title: string } | null
   meta: AudioMeta | null
   error: string | null
   settingsOpen: boolean
+  bookmarkOpen: boolean
   bookmarks: Bookmark[]
 
   init: () => Promise<void>
@@ -189,9 +206,11 @@ interface AppState {
   prev: () => void
   setSpeed: (s: number) => void
   setContinuous: (b: boolean) => void
+  setBtDisablePrevNext: (b: boolean) => void
   dismissResumeBanner: () => void
   playFromBeginning: () => void
   setSettingsOpen: (open: boolean) => void
+  setBookmarkOpen: (open: boolean) => void
   refreshBookmarks: () => Promise<void>
   removeBookmark: (path: string) => Promise<void>
   removeAllBookmarks: () => Promise<void>
@@ -214,10 +233,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   duration: 0,
   speed: Number(localStorage.getItem(SPEED_KEY)) || 1,
   continuous: localStorage.getItem(CONTINUOUS_KEY) !== '0',
+  btDisablePrevNext: localStorage.getItem(BT_DISABLE_KEY) === '1',
   resumeBanner: null,
   meta: null,
   error: null,
   settingsOpen: false,
+  bookmarkOpen: false,
   bookmarks: [],
 
   init: async () => {
@@ -282,13 +303,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       a.addEventListener('error', () => {
         useAppStore.setState({ status: 'idle', error: 'ファイルを読み込めませんでした' })
       })
-      setupMediaSession({
-        onPlay: () => get().togglePlay(),
-        onPause: () => get().togglePlay(),
-        onNext: () => get().next(),
-        onPrev: () => get().prev(),
-        onSeekTo: (position) => get().seek(position),
-      })
+      applyMediaSession()
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
           saveNow()
@@ -691,6 +706,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ continuous: b })
   },
 
+  setBtDisablePrevNext: (b) => {
+    localStorage.setItem(BT_DISABLE_KEY, b ? '1' : '0')
+    set({ btDisablePrevNext: b })
+    applyMediaSession()
+  },
+
   dismissResumeBanner: () => set({ resumeBanner: null }),
 
   playFromBeginning: () => {
@@ -700,6 +721,11 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setSettingsOpen: (open) => {
     set({ settingsOpen: open })
+    if (open) get().refreshBookmarks()
+  },
+
+  setBookmarkOpen: (open) => {
+    set({ bookmarkOpen: open })
     if (open) get().refreshBookmarks()
   },
 

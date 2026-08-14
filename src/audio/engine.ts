@@ -34,14 +34,14 @@ interface MediaSessionHandlers {
   onSeekTo: (position: number) => void
 }
 
-export function setupMediaSession(handlers: MediaSessionHandlers): void {
+export function setupMediaSession(handlers: MediaSessionHandlers, disablePrevNext: boolean): void {
   if (!('mediaSession' in navigator)) return
   const ms = navigator.mediaSession
   const actions: [MediaSessionAction, MediaSessionActionHandler | null][] = [
     ['play', handlers.onPlay],
     ['pause', handlers.onPause],
-    ['previoustrack', handlers.onPrev],
-    ['nexttrack', handlers.onNext],
+    ['previoustrack', disablePrevNext ? null : handlers.onPrev],
+    ['nexttrack', disablePrevNext ? null : handlers.onNext],
     ['seekto', (details) => {
       if (typeof details.seekTime === 'number') handlers.onSeekTo(details.seekTime)
     }],

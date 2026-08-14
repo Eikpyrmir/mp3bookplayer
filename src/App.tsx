@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { PlayerPanel } from './components/PlayerPanel'
 import { TreePanel } from './components/TreePanel'
 import { SettingsSheet } from './components/SettingsSheet'
+import { BookmarkSheet } from './components/BookmarkSheet'
 import { useAppStore } from './store/useAppStore'
 
 function ErrorToast() {
@@ -46,6 +47,7 @@ export default function App() {
         <TreePanel />
       </section>
       <SettingsSheet />
+      <BookmarkSheet />
       <ErrorToast />
     </div>
   )

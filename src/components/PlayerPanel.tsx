@@ -2,7 +2,7 @@ import { useAppStore, SPEED_PRESETS } from '../store/useAppStore'
 import { formatTime } from '../utils/format'
 import { SeekBar } from './SeekBar'
 import { Marquee } from './Marquee'
-import { IconMenu, IconNext, IconPause, IconPlay, IconPrev } from './Icons'
+import { IconBookmark, IconMenu, IconNext, IconPause, IconPlay, IconPrev } from './Icons'
 
 function StatusDot({ status }: { status: string }) {
   if (status === 'playing') {
@@ -35,6 +35,7 @@ export function PlayerPanel() {
   const prev = useAppStore((s) => s.prev)
   const setSpeed = useAppStore((s) => s.setSpeed)
   const setSettingsOpen = useAppStore((s) => s.setSettingsOpen)
+  const setBookmarkOpen = useAppStore((s) => s.setBookmarkOpen)
 
   const hasFile = file != null
   const playing = status === 'playing'
@@ -102,7 +103,7 @@ export function PlayerPanel() {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 items-center gap-1">
+      <div className="grid grid-cols-5 items-center gap-1">
         <button
           type="button"
           onClick={prev}
@@ -133,6 +134,14 @@ export function PlayerPanel() {
           title="進む"
         >
           <IconNext className="h-7 w-7" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setBookmarkOpen(true)}
+          className="flex h-12 items-center justify-center rounded-xl text-slate-200 transition active:bg-slate-800"
+          title="しおり"
+        >
+          <IconBookmark className="h-6 w-6" />
         </button>
         <button
           type="button"

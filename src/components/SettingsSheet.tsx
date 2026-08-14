@@ -1,5 +1,4 @@
 import { useAppStore, SPEED_PRESETS } from '../store/useAppStore'
-import { formatTime } from '../utils/format'
 import { IconX } from './Icons'
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
@@ -37,13 +36,11 @@ export function SettingsSheet() {
   const setSpeed = useAppStore((s) => s.setSpeed)
   const continuous = useAppStore((s) => s.continuous)
   const setContinuous = useAppStore((s) => s.setContinuous)
+  const btDisablePrevNext = useAppStore((s) => s.btDisablePrevNext)
+  const setBtDisablePrevNext = useAppStore((s) => s.setBtDisablePrevNext)
   const root = useAppStore((s) => s.root)
   const permissionState = useAppStore((s) => s.permissionState)
   const chooseRoot = useAppStore((s) => s.chooseRoot)
-  const bookmarks = useAppStore((s) => s.bookmarks)
-  const playBookmark = useAppStore((s) => s.playBookmark)
-  const removeBookmark = useAppStore((s) => s.removeBookmark)
-  const removeAllBookmarks = useAppStore((s) => s.removeAllBookmarks)
 
   if (!open) return null
 
@@ -92,6 +89,19 @@ export function SettingsSheet() {
             <Toggle checked={continuous} onChange={setContinuous} />
           </div>
 
+          <SectionTitle>Bluetooth</SectionTitle>
+          <div className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800 px-4 py-3">
+            <div>
+              <p className="text-sm text-slate-200">ボタン操作による戻る/進むを無効にする</p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Bluetoothヘッドセットなどのボタン操作を無効化します
+                <br />
+                (ロック画面の戻る/進むボタンも無効になります)
+              </p>
+            </div>
+            <Toggle checked={btDisablePrevNext} onChange={setBtDisablePrevNext} />
+          </div>
+
           <SectionTitle>フォルダ</SectionTitle>
           <div className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800 px-4 py-3">
             <div className="min-w-0">
@@ -118,50 +128,6 @@ export function SettingsSheet() {
               フォルダを選択
             </button>
           </div>
-
-          <SectionTitle>再生位置(しおり)</SectionTitle>
-          {bookmarks.length === 0 ? (
-            <p className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-slate-500">
-              保存された再生位置はありません
-            </p>
-          ) : (
-            <>
-              <ul className="divide-y divide-slate-700/60 rounded-xl border border-slate-700 bg-slate-800">
-                {bookmarks.map((b) => (
-                  <li key={b.path} className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOpen(false)
-                        playBookmark(b.path, b.position)
-                      }}
-                      className="min-w-0 flex-1 px-4 py-2.5 text-left transition hover:bg-slate-700/40 active:bg-slate-700/60"
-                      title="この位置から再生"
-                    >
-                      <p className="truncate text-sm text-slate-200">{b.title}</p>
-                      <p className="truncate text-xs text-slate-500">
-                        {b.path} ・ {formatTime(b.position)} / {formatTime(b.duration)}
-                      </p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeBookmark(b.path)}
-                      className="mr-2 flex-none rounded-lg px-2 py-1 text-xs text-red-400 hover:bg-slate-700"
-                    >
-                      削除
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              <button
-                type="button"
-                onClick={removeAllBookmarks}
-                className="mt-2 w-full rounded-xl border border-red-900/60 bg-red-950/40 px-4 py-2 text-sm text-red-300 hover:bg-red-900/30"
-              >
-                すべて削除
-              </button>
-            </>
-          )}
 
           <SectionTitle>アプリ情報</SectionTitle>
           <p className="text-xs text-slate-500">

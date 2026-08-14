@@ -5,9 +5,10 @@ interface MarqueeProps {
   children: ReactNode
   className?: string
   loop?: boolean
+  speed?: number
 }
 
-export function Marquee({ children, className = '', loop = true }: MarqueeProps) {
+export function Marquee({ children, className = '', loop = true, speed = 50 }: MarqueeProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const textRef = useRef<HTMLSpanElement>(null)
   const [overflowing, setOverflowing] = useState(false)
@@ -23,7 +24,7 @@ export function Marquee({ children, className = '', loop = true }: MarqueeProps)
       const over = text.scrollWidth > c.clientWidth
       setOverflowing(over)
       if (over) {
-        setDuration(Math.max(5, (text.scrollWidth - c.clientWidth) / 50))
+        setDuration(Math.max(5, (text.scrollWidth - c.clientWidth) / speed))
       }
     }
     check()
@@ -34,7 +35,7 @@ export function Marquee({ children, className = '', loop = true }: MarqueeProps)
       ro.disconnect()
       window.removeEventListener('resize', check)
     }
-  }, [children])
+  }, [children, speed])
 
   return (
     <div ref={containerRef} className={`min-w-0 overflow-hidden ${className}`}>
