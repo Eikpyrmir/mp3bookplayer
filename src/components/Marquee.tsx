@@ -15,13 +15,15 @@ export function Marquee({ children, className = '', loop = true }: MarqueeProps)
 
   useEffect(() => {
     const container = containerRef.current
-    const text = textRef.current
-    if (!container || !text) return
+    if (!container) return
     const check = () => {
-      const over = text.scrollWidth > container.clientWidth
+      const c = containerRef.current
+      const text = textRef.current
+      if (!c || !text) return
+      const over = text.scrollWidth > c.clientWidth
       setOverflowing(over)
       if (over) {
-        setDuration(Math.max(5, (text.scrollWidth - container.clientWidth) / 50))
+        setDuration(Math.max(5, (text.scrollWidth - c.clientWidth) / 50))
       }
     }
     check()

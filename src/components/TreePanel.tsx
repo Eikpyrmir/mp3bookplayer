@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import type { FolderNode, TreeNode } from '../types'
 import { formatTime } from '../utils/format'
+import { Marquee } from './Marquee'
 import {
   IconChevron,
   IconFolder,
@@ -15,6 +16,7 @@ import {
 
 function FolderRow({ node, depth }: { node: FolderNode; depth: number }) {
   const expanded = useAppStore((s) => !!s.expanded[node.path])
+  const status = useAppStore((s) => s.status)
   const toggleFolder = useAppStore((s) => s.toggleFolder)
   const loadFolder = useAppStore((s) => s.loadFolder)
   const loaded = node.loaded
@@ -35,7 +37,13 @@ function FolderRow({ node, depth }: { node: FolderNode; depth: number }) {
           className={`h-4 w-4 flex-none text-slate-500 transition-transform ${expanded ? 'rotate-90' : ''}`}
         />
         <IconFolder open={expanded} className="h-5 w-5 flex-none text-sky-400" />
-        <span className="min-w-0 flex-1 truncate">{node.name}</span>
+        {expanded && status === 'idle' ? (
+          <Marquee className="min-w-0 flex-1" loop={false}>
+            {node.name}
+          </Marquee>
+        ) : (
+          <span className="min-w-0 flex-1 truncate">{node.name}</span>
+        )}
       </button>
       {expanded && !node.loaded && (
         <div
