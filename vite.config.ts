@@ -12,7 +12,7 @@ export default defineConfig({
       includeAssets: ['favicon.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'オーディオブックプレイヤー',
-        short_name: 'ABPlayer',
+        short_name: 'mp3bookplayer',
         description: 'ローカルのMP3などでオーディオブックを再生するアプリ',
         theme_color: '#1e293b',
         background_color: '#0f172a',

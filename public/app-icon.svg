@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Eihwaz rune ᛇ</title>
   <rect width="512" height="512" rx="112" fill="#1e293b"/>
-  <path d="M256 128c-20 0-36 16-36 36v144c0 20 16 36 36 36s36-16 36-36v-10h-24v10c0 7-5 12-12 12s-12-5-12-12V164c0-7 5-12 12-12s12 5 12 12v34h-12v24h36v-58c0-20-16-36-36-36z" fill="#f8fafc"/>
-  <circle cx="256" cy="164" r="14" fill="#38bdf8"/>
-  <circle cx="220" cy="176" r="8" fill="#f8fafc"/>
-  <circle cx="292" cy="176" r="8" fill="#f8fafc"/>
-  <circle cx="220" cy="204" r="8" fill="#f8fafc"/>
-  <circle cx="292" cy="204" r="8" fill="#f8fafc"/>
-  <path d="M352 96H160c-18 0-32 14-32 32v256c0 18 14 32 32 32h192c18 0 32-14 32-32V128c0-18-14-32-32-32z" fill="none" stroke="#38bdf8" stroke-width="16"/>
+  <g fill="none" stroke="#f8fafc" stroke-width="26" stroke-linecap="butt" stroke-linejoin="miter">
+    <path d="M256 96V416"/>
+    <path d="M242 104H270L408 160"/>
+    <path d="M270 408H242L104 352"/>
+  </g>
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke="#38bdf8" stroke-width="16"/>
 </svg>
