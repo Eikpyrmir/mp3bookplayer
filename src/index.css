@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-950 text-slate-100;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  overscroll-behavior-y: contain;
+}
+
+.seekbar {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 12px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    #38bdf8 var(--fill, 0%),
+    #334155 var(--fill, 0%)
+  );
+  outline: none;
+  cursor: pointer;
+}
+
+.seekbar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  background: #f8fafc;
+  border: none;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.5);
+}
+
+.seekbar::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  background: #f8fafc;
+  border: none;
+}
+
+.seekbar:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  display: inline-flex;
+  width: max-content;
+  white-space: nowrap;
+  animation-name: marquee;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+.marquee-track.marquee-once {
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+}
+
+.marquee-track > span {
+  display: inline-block;
+  padding-right: 1.5rem;
+}
