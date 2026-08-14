@@ -53,6 +53,41 @@ function saveNow() {
       updatedAt: Date.now(),
     })
   }
+  saveLastPlayback()
+}
+
+const LAST_KEY = 'abp.lastPlayback'
+
+interface LastPlayback {
+  rootName: string
+  filePath: string
+  updatedAt: number
+}
+
+function saveLastPlayback() {
+  const st = useAppStore.getState()
+  if (!st.file || !st.root) return
+  try {
+    localStorage.setItem(
+      LAST_KEY,
+      JSON.stringify({
+        rootName: st.root.name,
+        filePath: st.file.path,
+        updatedAt: Date.now(),
+      } satisfies LastPlayback),
+    )
+  } catch {
+    // ignore
+  }
+}
+
+function readLastPlayback(): LastPlayback | null {
+  try {
+    const raw = localStorage.getItem(LAST_KEY)
+    return raw ? (JSON.parse(raw) as LastPlayback) : null
+  } catch {
+    return null
+  }
 }
 
 function parentFolderPath(filePath: string): string {
@@ -96,9 +131,13 @@ async function ensureFolderChainLoaded(
   root: FolderNode,
   path: string,
 ): Promise<FolderNode> {
+  let updated = root
+  if (!root.loaded) {
+    const children = await readFolderChildren(root.handle, '')
+    updated = updateFolderChildren(updated, '', children)
+  }
   const parts = path.split('/').filter(Boolean)
   let acc = ''
-  let updated = root
   for (const part of parts) {
     acc = acc ? `${acc}/${part}` : part
     const current = findFolder(updated, acc)
@@ -132,6 +171,7 @@ interface AppState {
   bookmarks: Bookmark[]
 
   init: () => Promise<void>
+  restoreLastPlayback: () => Promise<void>
   chooseRoot: () => Promise<void>
   refreshRoot: () => Promise<void>
   loadFolder: (path: string) => Promise<void>
@@ -253,9 +293,15 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     const handle = await loadRootHandle()
     if (handle) {
-      let state = await ensureReadPermission(handle, false)
-      if (state !== 'granted') {
-        state = await ensureReadPermission(handle, true)
+      let state: PermissionState = 'denied'
+      try {
+        state = await ensureReadPermission(handle, false)
+        if (state !== 'granted') {
+          state = await ensureReadPermission(handle, true)
+        }
+      } catch {
+        // ジェスチャーなしの権限要求が失敗する環境では、再選択を促す
+        state = 'denied'
       }
       if (state === 'granted') {
         set({
@@ -270,11 +316,53 @@ export const useAppStore = create<AppState>((set, get) => ({
           expanded: { '': true },
           permissionState: 'granted',
         })
+        await get().restoreLastPlayback()
       } else {
-        set({ permissionState: state, root: null })
+        set({
+          permissionState: state,
+          root: null,
+          error: '前回のフォルダへのアクセス権限が失効しました。フォルダを再選択してください',
+        })
       }
     }
     set({ rootReady: true })
+  },
+
+  restoreLastPlayback: async () => {
+    const { root, folderFiles } = get()
+    if (!root || folderFiles.length > 0) return
+    const saved = readLastPlayback()
+    if (!saved || saved.rootName !== root.name) return
+    const filePath = saved.filePath
+    const folderPath = parentFolderPath(filePath)
+    try {
+      let updated = await ensureFolderChainLoaded(root, folderPath)
+      const folder = findFolder(updated, folderPath)
+      const files = collectFiles(folder)
+      const index = files.findIndex((f) => f.path === filePath)
+      if (index < 0) return
+      const parts = folderPath.split('/').filter(Boolean)
+      let acc = ''
+      const toExpand: Record<string, boolean> = { '': true }
+      for (const part of parts) {
+        acc = acc ? `${acc}/${part}` : part
+        toExpand[acc] = true
+      }
+      set({
+        root: updated,
+        folderFiles: files,
+        folderPath,
+        index,
+        expanded: { ...get().expanded, ...toExpand },
+      })
+      const node = files[index]
+      if (node) {
+        await loadAudio(node, get().speed)
+        set({ file: node, meta: null, error: null })
+      }
+    } catch {
+      // 復元に失敗しても再生は可能なので無視
+    }
   },
 
   chooseRoot: async () => {
@@ -349,7 +437,21 @@ export const useAppStore = create<AppState>((set, get) => ({
         root: s.root ? updateFolderChildren(s.root, path, children) : s.root,
       }))
     } catch {
-      set({ error: 'フォルダを読み込めませんでした。権限が失効している可能性があります' })
+      const st = get()
+      let state: PermissionState = 'denied'
+      try {
+        state = await ensureReadPermission(st.root?.handle ?? node.handle, false)
+      } catch {
+        state = 'denied'
+      }
+      if (state !== 'granted') {
+        set({ permissionState: state, root: null })
+        set({
+          error: 'フォルダへのアクセス権限が失効しました。フォルダを再選択してください',
+        })
+      } else {
+        set({ error: 'フォルダを読み込めませんでした' })
+      }
     }
   },
 
@@ -441,15 +543,21 @@ export const useAppStore = create<AppState>((set, get) => ({
         })
         .catch(() => set({ status: 'paused', error: '再生できませんでした' }))
     } else if (st.status === 'idle' && st.file) {
-      a.currentTime = 0
       a.playbackRate = st.speed
-      a.play()
-        .then(() => {
-          acquireWakeLock()
-          setMediaPlayback('playing')
-          set({ status: 'playing', currentTime: 0 })
-        })
-        .catch(() => set({ status: 'idle', error: '再生できませんでした' }))
+      getBookmark(st.file.path).then((bm) => {
+        const pos =
+          bm && bm.position >= 5 && bm.duration > 0 && bm.position < bm.duration - 15
+            ? bm.position
+            : 0
+        a.currentTime = pos
+        a.play()
+          .then(() => {
+            acquireWakeLock()
+            setMediaPlayback('playing')
+            set({ status: 'playing', currentTime: pos })
+          })
+          .catch(() => set({ status: 'idle', error: '再生できませんでした' }))
+      })
     }
   },
 
