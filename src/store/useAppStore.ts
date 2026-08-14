@@ -467,6 +467,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   next: () => {
     const st = get()
     if (st.index < st.folderFiles.length - 1) {
+      saveNow()
       st.playIndex(st.index + 1)
     } else if (st.status !== 'idle') {
       const a = getAudio()
@@ -482,6 +483,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (st.currentTime > 3) {
       st.seek(0)
     } else if (st.index > 0) {
+      saveNow()
       st.playIndex(st.index - 1)
     } else {
       st.seek(0)
