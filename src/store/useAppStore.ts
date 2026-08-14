@@ -153,6 +153,7 @@ interface AppState {
   root: FolderNode | null
   rootReady: boolean
   permissionState: PermissionState | null
+  pendingRoot: FileSystemDirectoryHandle | null
   expanded: Record<string, boolean>
 
   status: PlayerStatus
@@ -172,12 +173,14 @@ interface AppState {
 
   init: () => Promise<void>
   restoreLastPlayback: () => Promise<void>
+  restorePermission: () => Promise<void>
   chooseRoot: () => Promise<void>
   refreshRoot: () => Promise<void>
   loadFolder: (path: string) => Promise<void>
   toggleFolder: (path: string) => Promise<void>
   playNode: (filePath: string) => Promise<void>
-  playIndex: (i: number) => Promise<void>
+  playBookmark: (path: string, position: number) => Promise<void>
+  playIndex: (i: number, seekTo?: number) => Promise<void>
   togglePlay: () => void
   seek: (t: number) => void
   next: () => void
@@ -197,6 +200,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   root: null,
   rootReady: false,
   permissionState: null,
+  pendingRoot: null,
   expanded: {},
 
   status: 'idle',
@@ -318,14 +322,45 @@ export const useAppStore = create<AppState>((set, get) => ({
         })
         await get().restoreLastPlayback()
       } else {
-        set({
-          permissionState: state,
-          root: null,
-          error: '前回のフォルダへのアクセス権限が失効しました。フォルダを再選択してください',
-        })
+        // 権限はユーザーの操作(タップ)がないと復元できないため、
+        // 保存済みハンドルを保持し、画面のボタンから復元できるようにする
+        set({ permissionState: state, root: null, pendingRoot: handle })
       }
     }
     set({ rootReady: true })
+  },
+
+  restorePermission: async () => {
+    const { pendingRoot } = get()
+    if (!pendingRoot) return
+    try {
+      const state = await ensureReadPermission(pendingRoot, true)
+      if (state !== 'granted') {
+        set({
+          permissionState: state,
+          error: 'アクセス権限を復元できませんでした。フォルダを選択し直してください',
+        })
+        return
+      }
+      set({
+        root: {
+          kind: 'folder',
+          name: pendingRoot.name,
+          path: '',
+          handle: pendingRoot,
+          loaded: false,
+          children: [],
+        },
+        expanded: { '': true },
+        permissionState: 'granted',
+        pendingRoot: null,
+      })
+      await get().restoreLastPlayback()
+    } catch {
+      set({
+        error: 'アクセス権限を復元できませんでした。フォルダを選択し直してください',
+      })
+    }
   },
 
   restoreLastPlayback: async () => {
@@ -399,6 +434,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         },
         expanded: { '': true },
         permissionState: 'granted',
+        pendingRoot: null,
       })
       saveRootHandle(handle)
     } catch (e) {
@@ -445,9 +481,10 @@ export const useAppStore = create<AppState>((set, get) => ({
         state = 'denied'
       }
       if (state !== 'granted') {
-        set({ permissionState: state, root: null })
         set({
-          error: 'フォルダへのアクセス権限が失効しました。フォルダを再選択してください',
+          permissionState: state,
+          root: null,
+          pendingRoot: st.root?.handle ?? node.handle,
         })
       } else {
         set({ error: 'フォルダを読み込めませんでした' })
@@ -493,18 +530,51 @@ export const useAppStore = create<AppState>((set, get) => ({
     await get().playIndex(index)
   },
 
-  playIndex: async (i) => {
+  playBookmark: async (path, position) => {
+    const { root } = get()
+    if (!root) return
+    const folderPath = parentFolderPath(path)
+    try {
+      let updated = await ensureFolderChainLoaded(root, folderPath)
+      const folder = findFolder(updated, folderPath)
+      const files = collectFiles(folder)
+      const index = files.findIndex((f) => f.path === path)
+      if (index < 0) return
+      const parts = folderPath.split('/').filter(Boolean)
+      let acc = ''
+      const toExpand: Record<string, boolean> = { '': true }
+      for (const part of parts) {
+        acc = acc ? `${acc}/${part}` : part
+        toExpand[acc] = true
+      }
+      set({
+        root: updated,
+        folderFiles: files,
+        folderPath,
+        expanded: { ...get().expanded, ...toExpand },
+      })
+      await get().playIndex(index, position)
+    } catch {
+      set({ error: 'フォルダを読み込めませんでした。権限が失効している可能性があります' })
+    }
+  },
+
+  playIndex: async (i, seekTo) => {
     const { folderFiles, speed, folderPath } = get()
     if (i < 0 || i >= folderFiles.length) return
     const node = folderFiles[i]
     try {
       const { audio, file } = await loadAudio(node, speed)
       const meta = await parseAudioMeta(node.name, file)
-      const bm = await getBookmark(node.path)
-      pendingResume =
-        bm && bm.position >= 5 && bm.duration > 0 && bm.position < bm.duration - 15
-          ? bm.position
-          : null
+      if (seekTo != null) {
+        pendingResume = seekTo
+      } else {
+        const bm = await getBookmark(node.path)
+        pendingResume =
+          bm && bm.position >= 5 && bm.duration > 0 && bm.position < bm.duration - 15
+            ? bm.position
+            : null
+      }
       set({
         file: node,
         index: i,

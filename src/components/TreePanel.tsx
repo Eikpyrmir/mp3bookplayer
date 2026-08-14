@@ -119,6 +119,39 @@ function ResumeBanner() {
   )
 }
 
+function PermissionRecovery({ onRestore, onSelect }: { onRestore: () => void; onSelect: () => void }) {
+  const pendingRoot = useAppStore((s) => s.pendingRoot)
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
+      <IconFolderSelect className="h-16 w-16 text-amber-400/80" />
+      <div>
+        <p className="text-sm font-medium text-slate-200">アクセス権限が失効しています</p>
+        <p className="mt-2 text-xs leading-relaxed text-slate-500">
+          Androidではアプリを閉じるとフォルダへのアクセス権限が失効することがあります。
+          <br />
+          ボタンをタップすると、前回のフォルダ
+          <span className="font-medium text-slate-300">{pendingRoot?.name ?? ''}</span>
+          へのアクセスを復元できます。
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onRestore}
+        className="rounded-2xl bg-sky-600 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-sky-900/40 transition active:scale-95"
+      >
+        アクセス権限を復元
+      </button>
+      <button
+        type="button"
+        onClick={onSelect}
+        className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800"
+      >
+        別のフォルダを選択
+      </button>
+    </div>
+  )
+}
+
 function EmptyState({ onSelect }: { onSelect: () => void }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
@@ -147,8 +180,10 @@ function EmptyState({ onSelect }: { onSelect: () => void }) {
 export function TreePanel() {
   const root = useAppStore((s) => s.root)
   const rootReady = useAppStore((s) => s.rootReady)
+  const pendingRoot = useAppStore((s) => s.pendingRoot)
   const chooseRoot = useAppStore((s) => s.chooseRoot)
   const refreshRoot = useAppStore((s) => s.refreshRoot)
+  const restorePermission = useAppStore((s) => s.restorePermission)
   const filePath = useAppStore((s) => s.file?.path)
 
   useEffect(() => {
@@ -172,6 +207,9 @@ export function TreePanel() {
   }
 
   if (!root) {
+    if (pendingRoot) {
+      return <PermissionRecovery onRestore={restorePermission} onSelect={chooseRoot} />
+    }
     return <EmptyState onSelect={chooseRoot} />
   }
 

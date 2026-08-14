@@ -41,6 +41,7 @@ export function SettingsSheet() {
   const permissionState = useAppStore((s) => s.permissionState)
   const chooseRoot = useAppStore((s) => s.chooseRoot)
   const bookmarks = useAppStore((s) => s.bookmarks)
+  const playBookmark = useAppStore((s) => s.playBookmark)
   const removeBookmark = useAppStore((s) => s.removeBookmark)
   const removeAllBookmarks = useAppStore((s) => s.removeAllBookmarks)
 
@@ -127,17 +128,25 @@ export function SettingsSheet() {
             <>
               <ul className="divide-y divide-slate-700/60 rounded-xl border border-slate-700 bg-slate-800">
                 {bookmarks.map((b) => (
-                  <li key={b.path} className="flex items-center gap-2 px-4 py-2.5">
-                    <div className="min-w-0 flex-1">
+                  <li key={b.path} className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpen(false)
+                        playBookmark(b.path, b.position)
+                      }}
+                      className="min-w-0 flex-1 px-4 py-2.5 text-left transition hover:bg-slate-700/40 active:bg-slate-700/60"
+                      title="この位置から再生"
+                    >
                       <p className="truncate text-sm text-slate-200">{b.title}</p>
                       <p className="truncate text-xs text-slate-500">
                         {b.path} ・ {formatTime(b.position)} / {formatTime(b.duration)}
                       </p>
-                    </div>
+                    </button>
                     <button
                       type="button"
                       onClick={() => removeBookmark(b.path)}
-                      className="flex-none rounded-lg px-2 py-1 text-xs text-red-400 hover:bg-slate-700"
+                      className="mr-2 flex-none rounded-lg px-2 py-1 text-xs text-red-400 hover:bg-slate-700"
                     >
                       削除
                     </button>
