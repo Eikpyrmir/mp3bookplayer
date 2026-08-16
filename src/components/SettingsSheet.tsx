@@ -41,6 +41,8 @@ export function SettingsSheet() {
   const root = useAppStore((s) => s.root)
   const permissionState = useAppStore((s) => s.permissionState)
   const chooseRoot = useAppStore((s) => s.chooseRoot)
+  const debugOpen = useAppStore((s) => s.debugOpen)
+  const toggleDebug = useAppStore((s) => s.toggleDebug)
 
   if (!open) return null
 
@@ -130,7 +132,14 @@ export function SettingsSheet() {
           </div>
 
           <SectionTitle>アプリ情報</SectionTitle>
-          <p className="text-xs text-slate-500">
+          <div className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800 px-4 py-3">
+            <div>
+              <p className="text-sm text-slate-200">デバッグ情報の表示</p>
+              <p className="mt-0.5 text-xs text-slate-500">再生状態やイベントログを画面に表示します</p>
+            </div>
+            <Toggle checked={debugOpen} onChange={toggleDebug} />
+          </div>
+          <p className="mt-1.5 text-xs text-slate-500">
             MP3 オーディオブックプレイヤー v1.0.0
             <br />
             対応形式: MP3 / M4A / AAC / FLAC / OGG / OPUS / WAV

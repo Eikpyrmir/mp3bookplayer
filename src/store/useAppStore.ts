@@ -25,6 +25,7 @@ import {
   updateMediaSession,
   updateMediaSessionPosition,
 } from '../audio/engine'
+import { logEvent, isDebug } from '../utils/debug'
 
 const SPEED_KEY = 'abp.speed'
 const CONTINUOUS_KEY = 'abp.continuous'
@@ -189,6 +190,7 @@ interface AppState {
   settingsOpen: boolean
   bookmarkOpen: boolean
   bookmarks: Bookmark[]
+  debugOpen: boolean
 
   init: () => Promise<void>
   restoreLastPlayback: () => Promise<void>
@@ -211,6 +213,7 @@ interface AppState {
   playFromBeginning: () => void
   setSettingsOpen: (open: boolean) => void
   setBookmarkOpen: (open: boolean) => void
+  toggleDebug: () => void
   refreshBookmarks: () => Promise<void>
   removeBookmark: (path: string) => Promise<void>
   removeAllBookmarks: () => Promise<void>
@@ -240,11 +243,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   settingsOpen: false,
   bookmarkOpen: false,
   bookmarks: [],
+  debugOpen: isDebug(),
 
   init: async () => {
     const a = getAudio()
     if (!wired) {
       wired = true
+      logEvent('init: イベント配線')
       a.addEventListener('timeupdate', () => {
         const now = performance.now()
         if (now - lastTimeUpdate < 200) return
@@ -301,17 +306,22 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
       })
       a.addEventListener('error', () => {
+        logEvent(`audio error src=${a.currentSrc}`)
         useAppStore.setState({ status: 'idle', error: 'ファイルを読み込めませんでした' })
       })
       applyMediaSession()
       document.addEventListener('visibilitychange', () => {
+        logEvent(`visibility ${document.hidden ? 'hidden' : 'visible'} status=${get().status}`)
         if (document.hidden) {
           saveNow()
         } else if (get().status === 'playing') {
           acquireWakeLock()
         }
       })
-      window.addEventListener('pagehide', () => saveNow())
+      window.addEventListener('pagehide', () => {
+        logEvent(`pagehide status=${get().status} hidden=${document.hidden}`)
+        saveNow()
+      })
     }
     if (bookmarkTimer == null) {
       bookmarkTimer = window.setInterval(() => saveNow(), 5000)
@@ -620,6 +630,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const st = get()
     const a = getAudio()
     if (st.status === 'playing') {
+      logEvent('togglePlay: playing→停止')
       a.pause()
       saveNow()
       releaseWakeLock()
@@ -627,6 +638,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ status: 'paused' })
       updateMediaSessionPosition(a.currentTime, a.duration, st.speed)
     } else if (st.status === 'paused') {
+      logEvent('togglePlay: paused→再生')
       a.playbackRate = st.speed
       a.play()
         .then(() => {
@@ -728,6 +740,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ bookmarkOpen: open })
     if (open) get().refreshBookmarks()
   },
+
+  toggleDebug: () => set((s) => ({ debugOpen: !s.debugOpen })),
 
   refreshBookmarks: async () => {
     const list = await getAllBookmarks()

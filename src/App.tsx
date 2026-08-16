@@ -3,6 +3,7 @@ import { PlayerPanel } from './components/PlayerPanel'
 import { TreePanel } from './components/TreePanel'
 import { SettingsSheet } from './components/SettingsSheet'
 import { BookmarkSheet } from './components/BookmarkSheet'
+import { DebugOverlay } from './components/DebugOverlay'
 import { useAppStore } from './store/useAppStore'
 
 function ErrorToast() {
@@ -49,6 +50,7 @@ export default function App() {
       <SettingsSheet />
       <BookmarkSheet />
       <ErrorToast />
+      <DebugOverlay />
     </div>
   )
 }
